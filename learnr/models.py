@@ -1,7 +1,6 @@
 import tensorflow.keras.models as km
 import tensorflow.keras.layers as kl
 import tensorflow.keras.regularizers as kr
-import tensorflow.keras.optimizers as ko
 
 def Ribli19(imsize=51, n_target=2 ,n_channels=1, nf=64, reg = 5e-5,
           padding='same'):
