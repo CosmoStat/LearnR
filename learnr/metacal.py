@@ -1,4 +1,93 @@
 import galflow as gf
+import tensorflow as tf
+from autometacal import generate_mcal_image
+
+def get_metacal_response_finitediff(gal_image,
+                                    psf_image,
+                                    reconv_psf_image,
+                                    shear,
+                                    step,
+                                    method):
+  """
+  Gets shear response as a finite difference operation, 
+  instead of automatic differentiation.
+  """
+  gal_image = tf.convert_to_tensor(gal_image,dtype=tf.float32)
+  psf_image = tf.convert_to_tensor(gal_image,dtype=tf.float32)
+  batch_size, _ , _ = gal_image.get_shape().as_list()
+  step_batch = tf.constant(step,shape=(batch_size,1),dtype=tf.float32)
+  
+  step1p = tf.pad(step_batch,[[0,0],[0,1]])
+  step1m = tf.pad(-step_batch,[[0,0],[0,1]])
+  step2p = tf.pad(step_batch,[[0,0],[1,0]])
+  step2m = tf.pad(-step_batch,[[0,0],[1,0]])
+    
+  img0s = generate_mcal_image(
+    gal_image,
+    psf_image,
+    reconv_psf_image,
+    tf.zeros([batch_size,2])
+  ) 
+  
+  shears1p = shear + step1p
+  img1p = generate_mcal_image(
+    gal_image,
+    psf_image,
+    reconv_psf_image,
+    shears1p
+  )
+  
+  shears1m = shear + step1m 
+  img1m = generate_mcal_image(
+    gal_image,
+    psf_image,
+    reconv_psf_image,
+    shears1m
+  ) 
+  
+  shears2p = shear + step2p 
+  img2p = generate_mcal_image(
+    gal_image,
+    psf_image,
+    reconv_psf_image,
+    shears2p
+  )
+  
+  shears2m = shear + step2m 
+  img2m = generate_mcal_image(
+    gal_image,
+    psf_image,
+    reconv_psf_image,
+    shears2m
+  ) 
+  
+  g0s = method(img0s)
+  g1p = method(img1p)
+  g1m = method(img1m)
+  g2p = method(img2p)
+  g2m = method(img2m)
+  
+  R11 = (g1p[:,0]-g1m[:,0])/(2*step)
+  R21 = (g1p[:,1]-g1m[:,1])/(2*step) 
+  R12 = (g2p[:,0]-g2m[:,0])/(2*step)
+  R22 = (g2p[:,1]-g2m[:,1])/(2*step)
+ 
+  #N. B.:The matrix is correct. 
+  #The transposition will swap R12 with R21 across a batch correctly.
+  R = tf.transpose(tf.convert_to_tensor(
+    [[R11,R21],
+     [R12,R22]],dtype=tf.float32)
+  )
+  
+  ellip_dict = {
+    'noshear':g0s,
+    '1p':g1p,
+    '1m':g1m,
+    '2p':g2p,
+    '2m':g2m,    
+  } 
+
+  return ellip_dict, R
 
 def generate_real_mcal_image(
   gal_images,

@@ -1,8 +1,8 @@
 import tensorflow as tf
-from autometacal import get_metacal_response_finitediff
+from .metacal import get_metacal_response_finitediff
+from .metacal import get_real_metacal_response_finitediff
 
-@tf.function
-def loss_fd(obs_batch,psf_batch,reconv_psf,model,shear_range=.1):
+def loss_fd(batch,reconv_psf,model,shear_range=.1):
   """
    Defines a loss respective to unit shear response
    
@@ -19,7 +19,8 @@ def loss_fd(obs_batch,psf_batch,reconv_psf,model,shear_range=.1):
     lost: float
       Distance between the shear response matrix and unity.
   """
-  
+  obs_batch, psf_batch = batch
+  batch_size = obs_batch.shape[0]   
   shears = tf.random.uniform((batch_size,2),-shear_range,shear_range,dtype=tf.float32)
   #compute response
   R = get_metacal_response_finitediff(obs_batch,
@@ -34,9 +35,7 @@ def loss_fd(obs_batch,psf_batch,reconv_psf,model,shear_range=.1):
   
   return lost
 
-
-@tf.function
-def loss_fd_real(obs_batch,psf_batch,reconv_psf,model,shear_range=.1):
+def loss_fd_real(batch,reconv_psf,model,shear_range=.1):
   """
    Defines a loss respective to unit shear response
    
@@ -53,10 +52,11 @@ def loss_fd_real(obs_batch,psf_batch,reconv_psf,model,shear_range=.1):
     lost: float
       Distance between the shear response matrix and unity.
   """
-  
+  obs_batch, psf_batch = batch
+  batch_size = obs_batch.get_shape().as_list()[0] 
   shears = tf.random.uniform((batch_size,2),-shear_range,shear_range,dtype=tf.float32)
   #compute response
-  R = get_metacal_response_finitediff(obs_batch,
+  R = get_real_metacal_response_finitediff(obs_batch,
                                       psf_batch,
                                       reconv_psf,
                                       shear=shears,
