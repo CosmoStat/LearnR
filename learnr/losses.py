@@ -31,7 +31,7 @@ def loss_fd(batch,reconv_psf,model,shear_range=.1):
                                       method=model)[1]
   #R = amc.get_metacal_response(...)[1]
   
-  lost = tf.norm(R - tf.eye(2),ord=2)
+  lost = tf.norm(R - tf.eye(2))
   
   return lost
 
