@@ -168,9 +168,8 @@ def generate_real_mcal_image(
   # Compute inverse Fourier transform
   img = tf.math.real(tf.signal.fftshift(im_reconv))
   
-  # Add noise
   img = img[:,fact*nx:-fact*nx,fact*ny:-fact*ny]
-  img += tf.random.normal([nx,ny],0,1e-6)
+
 
   return img
 
